@@ -1,0 +1,13 @@
+///////////////////////////////////////////////////////////////////////////////
+// processing_module.h: Header file for processing_module.cpp
+// Author: Adrian Rodriguez Murillo
+///////////////////////////////////////////////////////////////////////////////
+
+#ifndef PROCESSING_MODULE_H
+#define PROCESSING_MODULE_H
+
+#include <config.h>
+
+void process_irradiance();
+
+#endif

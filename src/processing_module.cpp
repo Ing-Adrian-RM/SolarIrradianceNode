@@ -1,0 +1,11 @@
+///////////////////////////////////////////////////////////////////////////////
+// Processing Module
+// Description: This module processes sensor data.
+// Author: Adrian Rodriguez Murillo
+///////////////////////////////////////////////////////////////////////////////
+
+#include "processing_module.h"
+
+void process_irradiance() {
+    // Stub for irradiance calculation and temperature compensation
+}

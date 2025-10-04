@@ -1,0 +1,14 @@
+///////////////////////////////////////////////////////////////////////////////
+// storage_module.h: Header file for storage_module.cpp
+// Author: Adrian Rodriguez Murillo
+///////////////////////////////////////////////////////////////////////////////
+
+#ifndef STORAGE_MODULE_H
+#define STORAGE_MODULE_H
+
+#include <config.h>
+
+void initialize_sd();
+void save_data_to_csv();
+
+#endif

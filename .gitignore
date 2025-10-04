@@ -1,0 +1,23 @@
+# PlatformIO build folders
+.pio/
+.platformio/
+
+# VS Code settings
+.vscode/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Librerías locales que pueden instalarse desde PlatformIO
+lib/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Compilación de Arduino
+*.elf
+*.bin
+*.hex
+*.pioenvs/
