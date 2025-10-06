@@ -9,6 +9,11 @@
 #include <config.h>
 
 void initialize_display();
-void update_display(uint8_t screen_id);
+void drawStatusScreen();
+void drawPanelDataScreen(int startIndex);
+void drawAverageDataScreen();
+void drawTransmissionScreen();
+void update_display();
+
 
 #endif

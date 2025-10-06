@@ -9,6 +9,7 @@
 #include <config.h>
 
 void initialize_sd();
+int getWeekNumber(struct tm *timeinfo);
 void save_data_to_csv();
 
 #endif

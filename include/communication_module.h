@@ -9,7 +9,8 @@
 #include <config.h>
 
 void initialize_communication();
+String getWiFiStatus();
 void handle_lora_requests();
-void upload_pending_files();
+void upload_to_thinkspeak();
 
 #endif

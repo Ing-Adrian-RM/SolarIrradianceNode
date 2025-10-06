@@ -7,119 +7,37 @@
 #include <config.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-//
-// initialize_system: Initialize all peripherals and modules
-//
-// inputs: none
-// outputs: none
-//
+// setup: Initialization function called once at startup
 ///////////////////////////////////////////////////////////////////////////////
-void initialize_system() {
+void setup()
+{
     Serial.begin(115200);
-
-    // Initialize SD card
     initialize_sd();
-
-    // Initialize sensors
     initialize_sensors();
-
-    // Initialize display
     initialize_display();
-
-    // Initialize LoRa
     initialize_communication();
+    calibrate_ina226_sensors();
+    calibrate_ads1115_sensors();
+    initialize_panels_structs();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-//
-// loop_sensors: Read sensors and update data structures
-//
-// inputs: none
-// outputs: none
-//
+// loop: Main loop function called repeatedly
 ///////////////////////////////////////////////////////////////////////////////
-void loop_sensors() {
-    read_ina226_sensors();
-    read_ads1115_sensors();
-}
+void loop()
+{
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// loop_processing: Process sensor data (Isc -> irradiance, temperature compensation)
-//
-// inputs: none
-// outputs: none
-//
-///////////////////////////////////////////////////////////////////////////////
-void loop_processing() {
-    process_irradiance();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// loop_storage: Save data to SD card
-//
-// inputs: none
-// outputs: none
-//
-///////////////////////////////////////////////////////////////////////////////
-void loop_storage() {
-    save_data_to_csv();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// loop_communication: Handle LoRa/Gateway requests and upload to Thingspeak
-//
-// inputs: none
-// outputs: none
-//
-///////////////////////////////////////////////////////////////////////////////
-void loop_communication() {
+    update_display();
     handle_lora_requests();
-    upload_pending_files();
-}
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// loop_display: Update TFT display based on screen_id
-//
-// inputs: none
-// outputs: none
-//
-///////////////////////////////////////////////////////////////////////////////
-void loop_display() {
-    update_display(screen_id);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// setup: Arduino setup function
-//
-///////////////////////////////////////////////////////////////////////////////
-void setup() {
-    initialize_system();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// loop: Arduino main loop
-//
-///////////////////////////////////////////////////////////////////////////////
-void loop() {
     unsigned long currentMillis = millis();
-
-    // Read sensors every 10 seconds
-    if (currentMillis - lastSensorRead >= 10000) {
+    if (currentMillis - lastSensorRead >= 10000)
+    {
         lastSensorRead = currentMillis;
-        loop_sensors();
-        loop_processing();
-        loop_storage();
+        read_ads1115_sensors();
+        read_ina226_sensors();
+        save_data_to_csv();
+        transmission_buffer();
+        thinkspeak_url();
     }
-
-    // Handle communication continuously
-    loop_communication();
-
-    // Update display continuously
-    loop_display();
 }
