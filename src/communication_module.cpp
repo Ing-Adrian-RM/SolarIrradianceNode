@@ -59,12 +59,17 @@ void handle_lora_requests()
         rssi = LoRa.packetRssi();
         snr = LoRa.packetSnr();
         String request = "";
+        int byteIndex = 0;
         while (LoRa.available())
         {
             char c = (char)LoRa.read();
-            request += c;
+            if (byteIndex >= 4) {
+                request += c;
+            }
+            byteIndex++;
         }
-        request.trim();
+
+        Serial.println("Received via LoRa: " + request);
         if (request == "NODE1")
         {
             if (buffer_ready)

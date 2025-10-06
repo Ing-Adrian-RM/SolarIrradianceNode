@@ -33,7 +33,7 @@ SOLAR_AVG panel_avg;
 ///////////////////////////////////////////////////////////////////////////////
 // ------------------------ WiFi Credentials ------------------------
 const char *ssid = "Adrian";
-const char *password = "123456789";
+const char *password = "12345678";
 // ------------------------ ThinkSpeak Credentials ------------------------
 const char *writeAPIKey = "H3NC7X8M9F15BRWZ";
 const char *thingspeakServer = "http://api.thingspeak.com/update";
