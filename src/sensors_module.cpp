@@ -150,7 +150,9 @@ void read_ina226_sensors()
 ///////////////////////////////////////////////////////////////////////////////
 void read_ads1115_sensors()
 {
-
+    int16_t vin_d = ads[1].readADC_SingleEnded(3);
+    float vin = (float)vin_d * ADS1115_LSB_GAIN_ONE;
+    Serial.printf("Vout test: %.4f V\n", vin);
     int panel_index = 0;
     for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next)
     {

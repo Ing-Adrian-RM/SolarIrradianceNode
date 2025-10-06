@@ -58,6 +58,7 @@ void handle_lora_requests()
     {
         rssi = LoRa.packetRssi();
         snr = LoRa.packetSnr();
+        Serial.println("Received packet with RSSI: " + String(rssi) + " dBm, SNR: " + String(snr) + " dB");
         String request = "";
         int byteIndex = 0;
         while (LoRa.available())
