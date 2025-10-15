@@ -44,49 +44,83 @@ void save_data_to_csv()
     int year = timeinfo->tm_year + 1900;
     if (year < 2020)
     {
-        Serial.println("Error: Invalid time, cannot save data");
-        return;
+        Serial.println("Error: Invalid time, be aware of NTP configuration and possible invalid timestamp.");
+        configTime(-6 * 3600, 0, "pool.ntp.org", "time.nist.gov"); // Configure NTP; -6 for CST (Costa Rica)
     }
     char filename[32];
-    snprintf(filename, sizeof(filename), "/W%02d_%d_irradiance.csv", weekNumber, year);
-    if (!SD.exists(filename))
+    if (calibration_mode)
     {
-        File file = SD.open(filename, FILE_WRITE);
+        snprintf(filename, sizeof(filename), "/W%02d_%d_calibration.csv", weekNumber, year);
+        if (!SD.exists(filename))
+        {
+            File file = SD.open(filename, FILE_WRITE);
+            if (!file)
+            {
+                Serial.println("Error: Unable to create weekly CSV calibration file");
+                return;
+            }
+            file.println("Timestamp,"
+                         "P1 [W/m^2],P2 [W/m^2],P3 [W/m^2],P4_ [W/m^2],P5 [W/m^2],P6 [W/m^2],Pavg [W/m^2],Spektron [W/m^2]");
+            file.close();
+        }
+        File file = SD.open(filename, FILE_APPEND);
         if (!file)
         {
-            Serial.println("Error: Unable to create weekly CSV file");
+            Serial.println("Error: Failed to open CSV file for writing");
             return;
         }
-        file.println("Timestamp,"
-                     "P1_Isc,P1_Irr,P1_T,"
-                     "P2_Isc,P2_Irr,P2_T,"
-                     "P3_Isc,P3_Irr,P3_T,"
-                     "P4_Isc,P4_Irr,P4_T,"
-                     "P5_Isc,P5_Irr,P5_T,"
-                     "P6_Isc,P6_Irr,P6_T,"
-                     "Pavg_Isc,Pavg_Irr,Pavg_T");
+        file.print(panel_avg.time_stamp);
+        file.print(",");
+        for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next)
+        {
+            file.printf("%.2f", ptr->panel->Irradiance);
+        }
+        file.printf("%.2f", panel_avg.Irradiance);
+        file.printf("%.2f\n", Spektron_reading);
         file.close();
     }
-    File file = SD.open(filename, FILE_APPEND);
-    if (!file)
+    else
     {
-        Serial.println("Error: Failed to open CSV file for writing");
-        return;
+        snprintf(filename, sizeof(filename), "/W%02d_%d_irradiance.csv", weekNumber, year);
+        if (!SD.exists(filename))
+        {
+            File file = SD.open(filename, FILE_WRITE);
+            if (!file)
+            {
+                Serial.println("Error: Unable to create weekly CSV file");
+                return;
+            }
+            file.println("Timestamp,"
+                         "P1_Isc [mA],P1_Irr [W/m^2],P1_T [ºC],"
+                         "P2_Isc [mA],P2_Irr [W/m^2],P2_T [ºC],"
+                         "P3_Isc [mA],P3_Irr [W/m^2],P3_T [ºC],"
+                         "P4_Isc [mA],P4_Irr [W/m^2],P4_T [ºC],"
+                         "P5_Isc [mA],P5_Irr [W/m^2],P5_T [ºC],"
+                         "P6_Isc [mA],P6_Irr [W/m^2],P6_T [ºC],"
+                         "Pavg_Isc,Pavg_Irr,Pavg_T");
+            file.close();
+        }
+        File file = SD.open(filename, FILE_APPEND);
+        if (!file)
+        {
+            Serial.println("Error: Failed to open CSV file for writing");
+            return;
+        }
+        file.print(panel_avg.time_stamp);
+        file.print(",");
+        for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next)
+        {
+            file.printf("%.2f,%.2f,%.2f,",
+                        ptr->panel->Isc,
+                        ptr->panel->Irradiance,
+                        ptr->panel->Temperature);
+        }
+        file.printf("%.2f,%.2f,%.2f\n",
+                    panel_avg.Isc,
+                    panel_avg.Irradiance,
+                    panel_avg.Temperature);
+        file.close();
     }
-    file.print(panel_avg.time_stamp);
-    file.print(",");
-    for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next)
-    {
-        file.printf("%.2f,%.2f,%.2f,",
-                    ptr->panel->Isc,
-                    ptr->panel->Irradiance,
-                    ptr->panel->Temperature);
-    }
-    file.printf("%.2f,%.2f,%.2f\n",
-                panel_avg.Isc,
-                panel_avg.Irradiance,
-                panel_avg.Temperature);
-    file.close();
     Serial.print("Data appended to ");
     Serial.println(filename);
 }

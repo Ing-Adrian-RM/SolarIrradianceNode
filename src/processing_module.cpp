@@ -71,7 +71,7 @@ float Isc_to_irradiance(float current_mA, float temperature_C)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Isc_to_irradiance: Convert Isc to irradiance using temperature compensation
+// panel_data_average: Average data from all panels
 ///////////////////////////////////////////////////////////////////////////////
 void panel_data_average()
 {
@@ -133,46 +133,98 @@ void transmission_buffer()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// thinkspeak_buffer: Buffer averaged data for ThingSpeak upload
+// thinkspeak_url_5min_calibration: Prepare URL for ThingSpeak upload every 5 minutes or in calibration mode
 ///////////////////////////////////////////////////////////////////////////////
-void thinkspeak_url()
+void thinkspeak_url_5min_cal()
 {
     static float panels_avg_irr[6] = {0};
     static float panel_avg_irr = 0.0F;
     static uint8_t average_count = 0;
+    static int Threshold;
     average_count++;
-    Serial.println("Average count for Thinkspeak: " + String(average_count));
 
-    if ((!upload_ready && average_count > AVG_COUNT_THRESHOLD))
+    Threshold = calibration_mode ? AVG_COUNT_THINKSPEAK_THRESHOLD_CALIBRATION : AVG_COUNT_THRESHOLD;
+    if (average_count > Threshold)
     {
         memset(panels_avg_irr, 0, sizeof(panels_avg_irr));
         panel_avg_irr = 0.0F;
-        average_count = 0;
-        url = "";
-        upload_ready = false;
+        average_count = 1;
     }
 
-    if (!upload_ready)
+    Serial.println("Average count for Thinkspeak: " + String(average_count));
+    int i = 0;
+    for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next, i++)
     {
-        int i = 0;
-        for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next, i++)
-        {
-            panels_avg_irr[i] += (ptr->panel->Irradiance - panels_avg_irr[i]) / average_count; // Cumulative average for each panel
-        }
-        panel_avg_irr += (panel_avg.Irradiance - panel_avg_irr) / average_count; // Cumulative average for all panels
-        if (average_count >= AVG_COUNT_THRESHOLD)
-        {
-            url = String(thingspeakServer) + "?api_key=" + String(writeAPIKey);
-            for (int i = 0; i < 6; i++)
-            {
-                url += "&field" + String(i + 1) + "=" + String(panels_avg_irr[i], 2);
-            }
-            url += "&field7=" + String(panel_avg_irr, 2);
-
-            Serial.println("Sending data to ThingSpeak:");
-            Serial.println(url);
-            upload_ready = true;
-            upload_to_thinkspeak();
-        }
+        panels_avg_irr[i] += (ptr->panel->Irradiance - panels_avg_irr[i]) / average_count; // Cumulative average for each panel
     }
+    panel_avg_irr += (panel_avg.Irradiance - panel_avg_irr) / average_count; // Cumulative average for all panels
+    Serial.printf("Average irradiance of all panels for Thinkspeak: %.2f W/m²\n", panel_avg_irr);
+
+    if (average_count >= Threshold)
+    {
+        if (calibration_mode)
+            url = String(thingspeakServer) + "?api_key=" + String(writeAPIKey_calibration);
+        else
+            url = String(thingspeakServer) + "?api_key=" + String(writeAPIKey_5min);
+
+        for (int i = 0; i < 6; i++)
+        {
+            url += "&field" + String(i + 1) + "=" + String(panels_avg_irr[i], 2);
+        }
+        url += "&field7=" + String(panel_avg_irr, 2);
+
+        if (calibration_mode)
+        {
+            url += "&field8=" + String(spektron_avg_irr, 2);
+            cal_buffer_used = true;
+        }
+
+        Serial.println("Sending data to ThingSpeak:");
+        Serial.println(url);
+        upload_to_thinkspeak();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// thinkspeak_url_15_sec: Prepare URL for ThingSpeak upload every 15 seconds
+///////////////////////////////////////////////////////////////////////////////
+void thinkspeak_url_15sec()
+{
+    int i = 0;
+    url = String(thingspeakServer) + "?api_key=" + String(writeAPIKey_15sec);
+
+    for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next, i++)
+    {
+        url += "&field" + String(i + 1) + "=" + String(ptr->panel->Irradiance, 2);
+    }
+    url += "&field7=" + String(panel_avg.Irradiance, 2);
+    
+    Serial.println("Sending data to 15 sec ThingSpeak:");
+    Serial.println(url);
+
+    upload_to_thinkspeak();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// calibration_average: Buffer averaged data for ThingSpeak upload in calibration mode
+///////////////////////////////////////////////////////////////////////////////
+void calibration_average()
+{
+    average_cal_count++;
+
+    if (cal_buffer_used)
+    {
+        spektron_avg_irr = 0.0F;
+        average_cal_count = 1;
+        cal_buffer_used = false;
+    }
+
+    ads[0].readADC_SingleEnded(3);
+    int16_t Spektron_raw = ads[0].readADC_SingleEnded(3);
+    float Spektron_voltage = (float)Spektron_raw * ADS1115_LSB_GAIN_ONE;
+    Spektron_reading = Spektron_voltage * (Spektron_irradiance_reference / Spektron_voltage_reference);
+    Serial.printf("Spektron Irradiance: %.2f W/m^2\n", Spektron_reading);
+
+    spektron_avg_irr += (Spektron_reading - spektron_avg_irr) / average_cal_count; // Cumulative average for Spektron
+    Serial.printf("Average Spektron irradiance for Thinkspeak: %.2f W/m²\n", spektron_avg_irr);
 }

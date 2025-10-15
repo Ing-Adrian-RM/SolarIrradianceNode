@@ -30,14 +30,22 @@ void loop()
     update_display();
     handle_lora_requests();
 
+    unsigned long cal_currentMillis = millis();
+    if (calibration_mode && (cal_currentMillis - lastCalRead >= 2000))
+    {
+        lastSensorRead = cal_currentMillis;
+        calibration_average();
+    }
+
     unsigned long currentMillis = millis();
-    if (currentMillis - lastSensorRead >= 10000)
+    if (currentMillis - lastSensorRead >= 15000)
     {
         lastSensorRead = currentMillis;
         read_ads1115_sensors();
         read_ina226_sensors();
         save_data_to_csv();
         transmission_buffer();
-        thinkspeak_url();
+        thinkspeak_url_5min_cal();
+        thinkspeak_url_15sec();
     }
 }

@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 void initialize_communication()
 {
-    WiFi.begin(ssid, password); // Connect to WiFi
+    WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);
@@ -64,7 +64,8 @@ void handle_lora_requests()
         while (LoRa.available())
         {
             char c = (char)LoRa.read();
-            if (byteIndex >= 4) {
+            if (byteIndex >= 4)
+            {
                 request += c;
             }
             byteIndex++;
@@ -93,25 +94,21 @@ void handle_lora_requests()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// upload_pending_files: Upload queued files to Thingspeak or server
+// upload_to_thinkspeak_15sec: Upload data to Thingspeak
 ///////////////////////////////////////////////////////////////////////////////
 void upload_to_thinkspeak()
 {
-    if (upload_ready)
+    HTTPClient http;
+    http.begin(url);
+    int httpCode = http.GET();
+    if (httpCode > 0)
     {
-        HTTPClient http;
-        http.begin(url);
-        int httpCode = http.GET();
-        if (httpCode > 0)
-        {
-            String response = http.getString();
-            Serial.println("Response from ThingSpeak: " + response);
-            upload_ready = false;
-        }
-        else
-        {
-            Serial.println("Error on sending request to ThingSpeak: " + String(httpCode));
-        }
-        http.end();
+        String response = http.getString();
+        Serial.println("Response from ThingSpeak: " + response);
     }
+    else
+    {
+        Serial.println("Error on sending request to ThingSpeak: " + String(httpCode));
+    }
+    http.end();
 }

@@ -20,8 +20,9 @@
 #define LORA_CR_DEN   5
 
 #define BUFFER_SIZE 128
-#define AVG_COUNT_THRESHOLD 12
-#define NO_REQUEST_THRESHOLD 30
+#define AVG_COUNT_THRESHOLD 20
+#define NO_REQUEST_THRESHOLD 40
+#define AVG_COUNT_THINKSPEAK_THRESHOLD_CALIBRATION 4
 
 #define HSPI_MISO   02
 #define HSPI_MOSI   15
@@ -105,8 +106,12 @@ extern volatile bool buffer_ready;
 // ------------------------ WiFi Credentials ------------------------
 extern const char* ssid;
 extern const char* password;
+extern const char* ssid_P;
+extern const char* password_P;
 // ------------------------ ThinkSpeak Credentials ------------------------
-extern const char* writeAPIKey;
+const char *writeAPIKey_5min;
+const char *writeAPIKey_calibration;
+const char *writeAPIKey_15sec;
 extern const char* thingspeakServer;
 // ------------------------ Panel data (datasheet) ------------------------
 extern const float Isc_ref_mA;
@@ -116,6 +121,14 @@ extern const float T_ref;
 // ------------------------ INA226 Calibration Variables ------------------------
 extern const float shunt_resistance;
 extern const float max_expected_current;
+// ------------------------ Spektron Calibration Variables ------------------------
+extern bool calibration_mode;
+extern float Spektron_reading;
+extern const float Spektron_voltage_reference;
+extern const float Spektron_irradiance_reference;
+extern float spektron_avg_irr;
+extern uint8_t average_cal_count;
+extern bool cal_buffer_used;
 // ------------------------ ADS I2C directions ------------------------
 extern const uint8_t ADS1115_ADDR[2];
 extern const float ADS1115_LSB_GAIN_ONE;
@@ -123,12 +136,13 @@ extern const float ADS1115_LSB_GAIN_ONE;
 extern uint8_t screen_id;
 // ------------------------ Data processing ------------------------
 extern unsigned long lastSensorRead;
+extern unsigned long lastCalRead;
 // ------------------------ Thermistor constants ------------------------
 extern const float R_PULLUP;
 extern const float R0;   
 extern const float BETA;
 extern const float T0_K;
-extern const float VCC;
+extern float VCC;
 // ------------------------ Display ------------------------
 extern unsigned long last_screen_change;
 extern int current_screen;

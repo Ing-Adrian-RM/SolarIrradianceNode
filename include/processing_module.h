@@ -13,6 +13,8 @@ SOLAR_CELL_LIST_PTR insert_panel(SOLAR_CELL_LIST_PTR list, solar_cell *panel);
 float Isc_to_irradiance(float current_mA, float temperature_C);
 void panel_data_average();
 void transmission_buffer();
-void thinkspeak_url();
+void thinkspeak_url_5min_cal();
+void thinkspeak_url_15sec();
+void calibration_average();
 
 #endif

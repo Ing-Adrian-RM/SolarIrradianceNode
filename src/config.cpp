@@ -32,19 +32,31 @@ SOLAR_AVG panel_avg;
 // Global Variables and Constants
 ///////////////////////////////////////////////////////////////////////////////
 // ------------------------ WiFi Credentials ------------------------
-const char *ssid = "Adrian";
-const char *password = "12345678";
+const char *ssid = "AmbientesControlados";
+const char *password = "Modulos@AmbCont23";
+const char *ssid_P = "Adrian";
+const char *password_P = "12345678";
 // ------------------------ ThinkSpeak Credentials ------------------------
-const char *writeAPIKey = "H3NC7X8M9F15BRWZ";
+const char *writeAPIKey_5min = "H3NC7X8M9F15BRWZ";
+const char *writeAPIKey_calibration = "90OIXJE7J7XXUJTA";
+const char *writeAPIKey_15sec = "PXIGFJ6S7XHCWW0I";
 const char *thingspeakServer = "http://api.thingspeak.com/update";
 // ------------------------ Panel data (datasheet) ------------------------
 const float Isc_ref_mA = 58.6;     // mA
 const float G_ref = 1000.0;        // Irradiance W/m²
 const float alpha_Isc = 0.0004526; // Relative thermal coefficient by ° C
 const float T_ref = 25.0;          // °C
-// ------------------------ INA226 Variables ------------------------
+// ------------------------ INA226 Calibration Variables ------------------------
 const float shunt_resistance = 0.5;
 const float max_expected_current = 0.06;
+// ------------------------ Spektron Calibration Variables ------------------------
+bool calibration_mode = true;
+float Spektron_reading = 0.0f;
+extern const float Spektron_voltage_reference = 0.07915f;   // V for 1000 W/m²
+extern const float Spektron_irradiance_reference = 1000.0f; // W/m² for calibration
+float spektron_avg_irr = 0.0f;
+uint8_t average_cal_count = 0;
+bool cal_buffer_used = false;
 // ------------------------ ADS I2C directions ------------------------
 const uint8_t ADS1115_ADDR[2] = {0x49, 0x48};
 const float ADS1115_LSB_GAIN_ONE = 0.000125f; // V per bit
@@ -52,12 +64,13 @@ const float ADS1115_LSB_GAIN_ONE = 0.000125f; // V per bit
 uint8_t screen_id = 0;
 // ------------------------ Data processing ------------------------
 unsigned long lastSensorRead = 0;
+unsigned long lastCalRead = 0;
 // ------------------------ Thermistor constants ------------------------
 const float R_PULLUP = 10000.0f;
 const float R0 = 10000.0f; // Thermistor resistance at T0 (ohms)
 const float BETA = 3892.0f;
 const float T0_K = 298.15f; // Reference temperature 25°C in Kelvin
-const float VCC = 4.3f;
+float VCC = 4.0959f;
 // ------------------------ Display ------------------------
 unsigned long last_screen_change = 0;
 int current_screen = 0;

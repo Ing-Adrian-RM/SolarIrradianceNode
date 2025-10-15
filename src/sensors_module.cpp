@@ -61,10 +61,10 @@ void calibrate_ina226_sensors()
     for (int i = 0; i < 6; i++)
     {
         // Set number of averages (1024 = maximum precision)
-        ina226[i].setAverage(INA226_512_SAMPLES);
+        ina226[i].setAverage(INA226_1024_SAMPLES);
 
-        // Set conversion time for both bus and shunt (maximum precision)
-        ina226[i].setBusVoltageConversionTime(INA226_8300_us);
+        // Set conversion time to minimun on bus (not used) and maximun on shunt (maximum precision)(use for current measurement)
+        ina226[i].setBusVoltageConversionTime(INA226_140_us);
         ina226[i].setShuntVoltageConversionTime(INA226_8300_us);
 
         // Continuous measurement mode for both shunt and bus voltage
@@ -73,8 +73,7 @@ void calibrate_ina226_sensors()
         // Configure calibration based on shunt and expected current
         ina226[i].setMaxCurrentShunt(max_expected_current, shunt_resistance);
 
-        // Avoid I2C congestion
-        delay(50);
+        delay(1); // Avoid I2C congestion
 
         Serial.print("INA226 P");
         Serial.print(i + 1);
@@ -109,9 +108,7 @@ void calibrate_ads1115_sensors()
             ads_gain = GAIN_ONE;
         }
 
-        // Avoid I2C congestion
-        delay(50);
-
+        delay(1); // Avoid I2C congestion
         Serial.print("ADC ");
         Serial.print(i + 1);
         Serial.println(" calibrated successfully.");
@@ -135,11 +132,11 @@ void read_ina226_sensors()
             delay(10);
         }
         float current_mA = ptr->panel->ina226_sensor->getCurrent_mA();
+        delay(1);
         float irradiance = Isc_to_irradiance(current_mA, ptr->panel->Temperature);
         ptr->panel->Irradiance = irradiance;
         ptr->panel->Isc = current_mA;
         Serial.printf("Panel %d -> Isc: %.3f mA, Irradiance: %.2f W/m²\n", panel_index + 1, current_mA, irradiance);
-        delay(50); // Avoid I2C congestion
         panel_index++;
     }
     panel_data_average();
@@ -150,9 +147,14 @@ void read_ina226_sensors()
 ///////////////////////////////////////////////////////////////////////////////
 void read_ads1115_sensors()
 {
-    int16_t vin_d = ads[1].readADC_SingleEnded(3);
-    float vin = (float)vin_d * ADS1115_LSB_GAIN_ONE;
-    Serial.printf("Vout test: %.4f V\n", vin);
+    ads[1].readADC_SingleEnded(3);
+    int16_t vin_c = ads[1].readADC_SingleEnded(3);
+    delay(1);
+    float vin = (float)vin_c * ADS1115_LSB_GAIN_ONE;
+    Serial.printf("Vin test: %.4f V\n", vin);
+    if ((abs(VCC - vin)) > 0.2)
+        VCC = vin;
+
     int panel_index = 0;
     for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next)
     {
@@ -161,9 +163,9 @@ void read_ads1115_sensors()
             ptr->panel->ads_sensor->readADC_SingleEnded(panel_index); // discard first sample for settling
             delay(50);                                                // Wait for settling, 5T ~50 ms for RC filter with R=10k and C=1uF.
             int16_t raw = ptr->panel->ads_sensor->readADC_SingleEnded(panel_index);
+            delay(1);
             float tempC = ads_raw_to_celsius(raw);
             ptr->panel->Temperature = tempC;
-            delay(50); // Avoid I2C congestion
             Serial.printf("Panel %d Temperature: %.2f C\n", panel_index + 1, tempC);
         }
         else
@@ -172,10 +174,10 @@ void read_ads1115_sensors()
             ptr->panel->ads_sensor->readADC_SingleEnded(ch);
             delay(50);
             int16_t raw = ptr->panel->ads_sensor->readADC_SingleEnded(ch);
+            delay(1);
             float tempC = ads_raw_to_celsius(raw);
             ptr->panel->Temperature = tempC;
             Serial.printf("Panel %d Temperature: %.2f C\n", panel_index + 1, tempC);
-            delay(50);
         }
         panel_index++;
     }
