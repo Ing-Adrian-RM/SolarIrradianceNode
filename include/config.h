@@ -109,9 +109,9 @@ extern const char* password;
 extern const char* ssid_P;
 extern const char* password_P;
 // ------------------------ ThinkSpeak Credentials ------------------------
-const char *writeAPIKey_5min;
-const char *writeAPIKey_calibration;
-const char *writeAPIKey_15sec;
+extern const char *writeAPIKey_5min;
+extern const char *writeAPIKey_calibration;
+extern const char *writeAPIKey_15sec;
 extern const char* thingspeakServer;
 // ------------------------ Panel data (datasheet) ------------------------
 extern const float Isc_ref_mA;
