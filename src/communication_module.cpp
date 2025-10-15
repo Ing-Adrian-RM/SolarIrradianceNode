@@ -74,20 +74,36 @@ void handle_lora_requests()
         Serial.println("Received via LoRa: " + request);
         if (request == "NODE1")
         {
+            char buffer[BUFFER_SIZE];
             if (buffer_ready)
             {
-                LoRa.beginPacket();
-                LoRa.write((const uint8_t *)tx_buffer, strlen(tx_buffer));
-                LoRa.endPacket();
-                Serial.println("Sent via LoRa: " + String(tx_buffer));
-                buffer_ready = false;
+                snprintf(buffer, BUFFER_SIZE, "%s", tx_buffer);
             }
             else
             {
-                const char no_data[] = "NO_DATA";
+                snprintf(buffer, BUFFER_SIZE, "NO_DATA");
+            }
+            LoRa.beginPacket();
+            LoRa.write((const uint8_t *)buffer, strlen(buffer));
+            LoRa.endPacket();
+            Serial.println("Sent via LoRa: " + String(buffer));
+            buffer_ready = false;
+
+            // Wait 1 sec for ACK response
+            unsigned long startWait = millis();
+            while (packetSize == 0 && (millis() - startWait < 1000))
+            {
+                packetSize = LoRa.parsePacket();
+                delay(10);
+                yield();
+            }
+            if (packetSize == 0)
+            {
+                Serial.println("No ACK response received in 1s, resending package.");
                 LoRa.beginPacket();
-                LoRa.write((const uint8_t *)no_data, strlen(no_data));
+                LoRa.write((const uint8_t *)buffer, strlen(buffer));
                 LoRa.endPacket();
+                Serial.println("Resending via LoRa: " + String(buffer));
             }
         }
     }
