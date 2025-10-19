@@ -55,8 +55,11 @@ float Spektron_reading = 0.0f;
 extern const float Spektron_voltage_reference = 0.07915f;   // V for 1000 W/m²
 extern const float Spektron_irradiance_reference = 1000.0f; // W/m² for calibration
 float spektron_avg_irr = 0.0f;
-uint8_t average_cal_count = 0;
+uint16_t average_cal_count = 0;
 bool cal_buffer_used = false;
+// ------------------------ Linear Regression Calibration (Coefficients from Matlab Analisis) ------------------------
+float calib_a[6] = {1.055414257, 1.038356658, 1.051318847, 1.033020218, 1.035471421, 1.048492097}; //Slope
+float calib_b[6] = {-0.066059821, -1.020814655, -1.269966364, 0.774419482, -0.185765026, -0.553767494}; //Intercept
 // ------------------------ ADS I2C directions ------------------------
 const uint8_t ADS1115_ADDR[2] = {0x49, 0x48};
 const float ADS1115_LSB_GAIN_ONE = 0.000125f; // V per bit

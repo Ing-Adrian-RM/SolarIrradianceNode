@@ -127,8 +127,11 @@ extern float Spektron_reading;
 extern const float Spektron_voltage_reference;
 extern const float Spektron_irradiance_reference;
 extern float spektron_avg_irr;
-extern uint8_t average_cal_count;
+extern uint16_t average_cal_count;
 extern bool cal_buffer_used;
+// ------------------------ Linear Regression Calibration (Coefficients from Matlab Analisis) ------------------------
+extern float calib_a[6];
+extern float calib_b[6];
 // ------------------------ ADS I2C directions ------------------------
 extern const uint8_t ADS1115_ADDR[2];
 extern const float ADS1115_LSB_GAIN_ONE;

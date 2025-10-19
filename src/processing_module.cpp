@@ -112,7 +112,7 @@ void transmission_buffer()
     if ((!buffer_ready && avg_count > AVG_COUNT_THRESHOLD) || (buffer_ready && avg_count > NO_REQUEST_THRESHOLD))
     {
         avg_Irradiance = 0.0F;
-        avg_count = 0;
+        avg_count = 1;
         memset(last_time_stamp, 0, sizeof(last_time_stamp));
         memset(tx_buffer, 0, sizeof(tx_buffer));
         buffer_ready = false;
@@ -126,7 +126,7 @@ void transmission_buffer()
 
         if (avg_count >= AVG_COUNT_THRESHOLD)
         {
-            snprintf(tx_buffer, BUFFER_SIZE, "NODE1|%s|%.2f", last_time_stamp, avg_Irradiance);
+            snprintf(tx_buffer, BUFFER_SIZE, "%s|%s|%.2f", "NODE1", last_time_stamp, avg_Irradiance);
             buffer_ready = true;
         }
     }
@@ -218,7 +218,7 @@ void calibration_average()
         average_cal_count = 1;
         cal_buffer_used = false;
     }
-
+    Serial.println("Average count for calibration Thinkspeak: " + String(average_cal_count));
     ads[0].readADC_SingleEnded(3);
     int16_t Spektron_raw = ads[0].readADC_SingleEnded(3);
     float Spektron_voltage = (float)Spektron_raw * ADS1115_LSB_GAIN_ONE;

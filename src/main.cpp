@@ -33,7 +33,7 @@ void loop()
     unsigned long cal_currentMillis = millis();
     if (calibration_mode && (cal_currentMillis - lastCalRead >= 2000))
     {
-        lastSensorRead = cal_currentMillis;
+        lastCalRead = cal_currentMillis;
         calibration_average();
     }
 

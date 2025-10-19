@@ -134,9 +134,10 @@ void read_ina226_sensors()
         float current_mA = ptr->panel->ina226_sensor->getCurrent_mA();
         delay(1);
         float irradiance = Isc_to_irradiance(current_mA, ptr->panel->Temperature);
-        ptr->panel->Irradiance = irradiance;
+        float irradiancia_cal = calib_a[panel_index] * irradiance + calib_b[panel_index];
+        ptr->panel->Irradiance = irradiancia_cal;
         ptr->panel->Isc = current_mA;
-        Serial.printf("Panel %d -> Isc: %.3f mA, Irradiance: %.2f W/m²\n", panel_index + 1, current_mA, irradiance);
+        Serial.printf("Panel %d -> Isc: %.3f mA, Irradiance: %.2f W/m²\n", panel_index + 1, current_mA, irradiancia_cal);
         panel_index++;
     }
     panel_data_average();

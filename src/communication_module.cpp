@@ -81,7 +81,7 @@ void handle_lora_requests()
             }
             else
             {
-                snprintf(buffer, BUFFER_SIZE, "NO_DATA");
+                snprintf(buffer, BUFFER_SIZE, "%s", "NO_DATA");
             }
             LoRa.beginPacket();
             LoRa.write((const uint8_t *)buffer, strlen(buffer));
