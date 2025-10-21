@@ -55,7 +55,7 @@ const float shunt_resistance = 0.5; // Ohms
 const float max_expected_current = 0.06; // Amperes (60 mA)
 
 // ------------------------ Spektron Calibration Variables ------------------------
-bool calibration_mode = true;  // Set true for calibration mode
+bool calibration_mode = false;  // Set true for calibration mode
 float Spektron_reading = 0.0f; // Raw voltage reading
 extern const float Spektron_voltage_reference = 0.07915f;   // V at 1000 W/m²
 extern const float Spektron_irradiance_reference = 1000.0f; // W/m²
