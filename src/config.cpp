@@ -91,7 +91,6 @@ const unsigned long SCREEN_INTERVAL = 5000;
 // ------------------------ Transmission ------------------------
 char tx_buffer[BUFFER_SIZE] = {0}; // Transmission buffer
 volatile bool buffer_ready = false; // Flag to indicate buffer is ready for transmission
-volatile bool upload_ready = false; // Flag to indicate data is ready for upload
 int rssi = 0; // Received Signal Strength Indicator
 float snr = 0.0f; // Signal-to-Noise Ratio
 String url = ""; // URL for HTTP requests

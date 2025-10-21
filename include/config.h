@@ -153,7 +153,6 @@ extern const unsigned long SCREEN_INTERVAL;
 // ------------------------ Transmission ------------------------
 extern char tx_buffer[BUFFER_SIZE];
 extern volatile bool buffer_ready;
-extern volatile bool upload_ready;
 extern int rssi;
 extern float snr;
 extern String url;
