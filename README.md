@@ -1,142 +1,110 @@
-Solar Irradiance Node - TTGO LoRa32 V2.1 Project
+# Solar Irradiance Node
 
-This project implements an IoT solar irradiance measurement node using the TTGO LoRa32 V2.1 microcontroller (ESP32-based). The node measures the short-circuit current (Isc) of solar cells, compensates for temperature, stores data on an SD card, sends averaged measurements to a gateway via LoRa and upload data via Thingspeak Mathworks to cloud.
+IoT node built around the ESP32-based TTGO LoRa32 V2.1 board to capture solar irradiance, perform thermal compensation, log time series to a microSD card, and publish processed statistics through LoRa and ThingSpeak.
 
-**Table of Contents:**
+## 📡 System overview
+- **Acquisition**: Six INA226 current sensors capture short-circuit current (Isc) for each panel IXOLAR KXOB25-14X1F-TR, while six Littelfuse USP10982 thermistors are digitized through two ADS1115 converters to obtain panel temperatures.
+- **Processing**: Isc readings are temperature-compensated, converted into irradiance, aggregated per panel, and combined into global averages for local display, storage, and radio transmission.
+- **Communication**: The node replies to LoRa gateway requests (`NODE1`) with the latest averaged packet and periodically pushes 15 s and 5 min summaries to ThingSpeak (normal or calibration mode).
+- **Local interface**: The onboard OLED cycles through system status, per-panel metrics, global averages, and transmission state screens.
+- **Storage**: Every 15 seconds, a new row is appended to a weekly CSV file stored on the SD card, with timestamps, Isc, irradiance, temperature, and Spektron reference (when available).
 
-* Project Overview
-* System Components
-* Functional Description
-* Project Structure
-* Dependencies
-* Setup and Configuration
-* Usage
-* Version Control
-* License
+## 🧱 Code architecture
+```
+include/
+├── communication_module.h   # LoRa/Wi-Fi and ThingSpeak interface
+├── config.h                 # Pin map, global constants, forward declarations
+├── display_module.h         # OLED utilities and screen rotation
+├── processing_module.h      # Numerical processing pipelines
+├── sensors_module.h         # Sensor initialization and sampling routines
+├── storage_module.h         # SD card writer utilities
+└── thermistor_utils.h       # ADC-to-temperature conversion helpers
 
-**Project Overview:**
+src/
+├── config.cpp               # Global instances and constant definitions
+├── main.cpp                 # `setup()` and `loop()` entry points
+├── *.cpp                    # Module implementations
+```
 
-The Solar Irradiance Node is designed to work as a node in a distributed IoT network, communicating with a Raspberry Pi gateway via LoRa. It provides accurate solar irradiance measurements with temperature compensation, while storing data for backup and cloud upload to Thingspeak.
+Each module exposes the public interface declared in `include/` and uses the shared objects instantiated in `src/config.cpp`.
 
-Key Features:
+## 🛠️ Hardware requirements
+- TTGO LoRa32 V2.1 (ESP32) development board.
+- Six INA226 current sensors wired to the primary I²C bus.
+- Two ADS1115 ADCs for thermistor and Spektron readings.
+- Six Littelfuse USP10982 thermistors mounted on the panels.
+- Optional Spektron reference pyranometer for calibration.
+- MicroSD card connected over HSPI as defined in `include/config.h`.
+- LoRa antenna and Wi-Fi connectivity for synchronization and cloud uploads.
 
-* Measures Isc using INA226 sensors.
-* Reads cell temperature using ADS1115 with Littelfuse USP10982 thermistors.
-* Supports six solar cell sets with independent measurement channels.
-* Computes irradiance values with temperature compensation.
-* Stores data every 10s in weekly CSV's format on SD card.
-* Maintains a queue of files pending cloud upload (Thingspeak).
-* Provides a modular dashboard on the TTGO display with multiple screens.
-* Handles LoRa communication for IoT network data requests.
-* Supports dual-core ESP32 processing: one core for data processing, one core for communication.
+## 📦 Software dependencies
+This project targets PlatformIO with the Arduino framework. Required libraries are resolved automatically through `platformio.ini`:
 
-System Components:
+- Adafruit ADS1X15
+- Adafruit BusIO
+- LoRa
+- INA226 (Rob Tillaart)
+- SD
+- U8g2
 
-* Microcontroller: TTGO LoRa32 V2.1_1.6 (ESP32-based)
-* Solar Cells: 6 × IXOLARTM SolarBIT KXOB25-14X1F-TR solar cells
-* Temperature sensors: 6 x Littelfuse USP10982 10kΩ thermistors (10kΩ SMD voltage divider)
-* Current Sensors: 6 × INA226 current sensors
-* ADCs: 2 × ADS1115 16-bit ADC (3 channels used per ADC)
-* Data Storage and Communication:
-    SD card for local backup
-    LoRa antenna for node-gateway communication
-    WiFi connectivity for cloud upload (Thingspeak)
-    ESP32 dual-core handling processing and transmission threads
-* Display: TTGO integrated TFT screen
-    Multiple configurable screens (time, global irradiance, per-panel irradiance, WiFi status, gateway irradiance, etc.)
+Initialize the environment by running:
+```bash
+pio run
+```
+This command fetches dependencies and compiles the firmware for `ttgo-lora32-v21`.
 
-**Functional Description:**
+## ⚙️ Initial configuration
+1. **Credentials and calibration constants**: Inspect `src/config.cpp` to configure Wi-Fi SSID/password, ThingSpeak API keys, per-panel calibration parameters, and thermistor coefficients.
+2. **Pin assignments**: Review `include/config.h` for SPI, I²C, OLED, and LoRa pin mappings.
+3. **Calibration mode**: The global `calibration_mode` flag is `true` by default. Set it to `false` once calibration is completed to switch the CSV naming scheme and ThingSpeak endpoints.
+4. **Timezone**: Update the `configTime` call in `src/communication_module.cpp` if the device operates outside the default CST (UTC−6) offset.
 
-1. Data Acquisition:
-INA226 measures short-circuit current (Isc) for each solar cell set.
-ADS1115 measures thermistor voltage, converting to temperature.
-Each sensor module calibrated individually.
+## 🔄 Execution flow
+1. `setup()` initializes the SD card, sensors, display, communication stack, and data structures, followed by INA226/ADS1115 calibration routines.
+2. `loop()` rotates OLED screens, handles LoRa packets, performs 15 s acquisition cycles, processes irradiance metrics, appends CSV rows, and updates ThingSpeak buffers.
+3. Upon receiving the `NODE1` request, the node returns `NODE1|timestamp|avg_irradiance`; otherwise it replies `NO_DATA` when buffers are empty.
+4. `thinkspeak_url_15sec()` and `thinkspeak_url_5min_cal()` prepare REST payloads and trigger `upload_to_thinkspeak()` to publish accumulated averages.
 
-2. Data Processing:
-Isc values converted to irradiance and temperature-compensated.
-Data appended to weekly CSV files with 16 columns: timestamp, data_type, irra_cell_1 … irra_cell_6, temp_cell1 … temp_cell_6, average_irradiance, average_temperature.
-Core 1 handles data processing; Core 2 handles transmission.
+## 🗃️ SD card CSV layout
+- **Normal mode**: `W<week>_<year>_irradiance.csv` stores Isc, irradiance, and temperature per panel together with aggregate statistics.
+- **Calibration mode**: `W<week>_<year>_calibration.csv` includes per-panel irradiance, global averages, and Spektron reference readings.
 
-3. Transmission:
-Node waits for gateway requests.
-Sends a weighted average measurement over LoRa: weighted over time window since last request and weighted across six solar cell sets.
+Headers are regenerated at the start of each ISO week, and subsequent acquisition cycles append new entries.
 
-4. Cloud Backup:
-Files created or modified are added to a queue (queue/pending.txt) for cloud upload.
-Daily upload process checks queue and uploads files to Thingspeak.
-Successfully uploaded files removed from queue; failed uploads retried later.
+## 📺 OLED screen rotation
+1. System status (Wi-Fi, RTC timestamp).
+2. Panels 1–2 (Isc, irradiance, temperature).
+3. Panels 3–4.
+4. Panels 5–6.
+5. Global averages.
+6. Transmission status (buffer readiness, RSSI, SNR).
 
-5. Display Management:
-Modular screen system: general paint function updates the display, subfunctions define each screen.
-Screens switched via a screen_id variable.
+The default rotation interval is 5 seconds; adjust `SCREEN_INTERVAL` in `src/config.cpp` if a different cadence is required.
 
-**Project Structure:**
+## 🛰️ Calibration with Spektron
+When `calibration_mode` is enabled:
+- ThingSpeak uploads use `AVG_COUNT_THINKSPEAK_THRESHOLD_CALIBRATION` samples per batch.
+- ADS1115 channel 3 captures the Spektron voltage and converts it to irradiance through linear coefficients declared in `src/config.cpp`.
+- The Spektron average is published to ThingSpeak `field8` and stored in calibration CSV files.
 
-SolarIrradianceNode/
-├── include/                      # Headers (.h)
-│   ├── sensors_module.h
-│   ├── processing_module.h
-│   ├── storage_module.h
-│   ├── communication_module.h
-│   ├── display_module.h
-│   └── config.h                  # Definiciones globales (pines, direcciones I2C, etc.)
-│
-├── src/                          # Código fuente (.cpp)
-│   ├── main.cpp
-│   ├── sensors_module.cpp
-│   ├── processing_module.cpp
-│   ├── storage_module.cpp
-│   ├── communication_module.cpp
-│   ├── display_module.cpp
-│
-├── data/                         # Datos estáticos (opcional, se suben a SPIFFS/LittleFS)
-│
-├── logs/                         # Archivos de log en la SD (debug, errores, etc.)
-│
-├── results/                      # Resultados exportados (ej: CSV semanales en SD)
-│
-├── queue/                        # Cola de carga (ej: lista .txt de archivos pendientes para Thingspeak)
-│
-├── lib/                          # Librerías locales propias (si decides crear helpers reusables)
-│
-├── test/                         # Pruebas unitarias
-│
-└── platformio.ini
+## 🌐 External data repositories
+- Google Drive project archive: _add shared link here_
+- ThingSpeak 15-second channel: https://thingspeak.mathworks.com/channels/3116915
+- ThingSpeak 5-minute channel: https://thingspeak.mathworks.com/channels/3100981
+- ThingSpeak calibration channel: https://thingspeak.mathworks.com/channels/3100981
 
-**Dependencies**
+## 🚀 Build and deploy
+1. Compile and upload the firmware:
+   ```bash
+   pio run --target upload
+   ```
+2. Open the serial monitor to verify initialization, calibration steps, and LoRa traffic:
+   ```bash
+   pio device monitor
+   ```
+3. Diagnostic logging is available through `CORE_DEBUG_LEVEL=5` configured in `platformio.ini`.
 
-The project relies on several Arduino libraries (installable via PlatformIO): Adafruit INA226, Adafruit ADS1X15, SD library, SPI library, LoRa (for TTGO LoRa32), WiFi (for ESP32 cloud upload). PlatformIO will automatically handle library installation if listed in platformio.ini under lib_deps.
-
-**Setup and Configuration**
-
-Clone the repository: git clone https://github.com/Ing-Adrian-RM/SolarIrradianceNode.git
-
-Initialize PlatformIO environment: pio project init --board ttgo-lora32-v21.
-
-Configure pins, I2C addresses, and screen IDs in include/config.h.
-
-Compile and upload: pio run --target upload.
-
-Open Serial Monitor to debug: pio device monitor.
-
-**Usage**
-
-Data is sampled every 10 seconds.
-
-CSV files are created weekly in results/.
-
-Node responds to gateway requests via LoRa every 5 minutes (configurable).
-
-Cloud upload process runs daily (configurable) and checks queue/pending.txt.
-
-Display can be navigated by changing the screen_id variable.
-
-**Version Control**
-
-Recommended workflow using Git: git status, git add ., git commit -m "Description of changes", git push origin main.
-
-Common commands: git pull origin main → sync with remote, git checkout -b feature-branch → create new branch, git merge feature-branch → merge branch into main, git log --oneline → see commit history.
-
-**License**
-
-This project is open-source under the MIT License. See LICENSE for details.
+## 📚 References
+- [PlatformIO Documentation](https://docs.platformio.org/)
+- [TTGO LoRa32 V2.1](https://github.com/LilyGO/TTGO-T-Beam)
+- [ThingSpeak Guides](https://thingspeak.com/docs)
