@@ -9,9 +9,6 @@
 .DS_Store
 Thumbs.db
 
-# Librerías locales que pueden instalarse desde PlatformIO
-lib/
-
 # Archivos temporales
 *.tmp
 *.temp
