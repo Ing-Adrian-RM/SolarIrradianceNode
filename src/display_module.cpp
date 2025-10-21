@@ -13,7 +13,7 @@ void initialize_display()
 {
     display.begin();
     display.setContrast(255);
-    display.setPowerSave(0);
+    display.setPowerSave(0); // Disable power save mode
     display.clearBuffer();
     display.setFont(u8g2_font_6x13_tf);
     display.drawStr(0, 30, "Display initialized");
@@ -30,12 +30,10 @@ void drawStatusScreen()
     display.setFont(u8g2_font_6x13_tf);
     display.drawStr(0, 10, "    SYSTEM STATUS");
 
-    // WiFi
     display.setCursor(0, 25);
     display.print("WiFi: ");
     display.print(getWiFiStatus());
 
-    // Time & date (if NTP active and synced)
     time_t now = time(nullptr);
     struct tm *t = localtime(&now);
     if (t && t->tm_year > 70)
@@ -67,6 +65,7 @@ void drawStatusScreen()
 
 ///////////////////////////////////////////////////////////////////////////////
 // drawPanelDataScreen: Display data from solar panels
+// Inputs: startIndex - Index of the first panel to display
 ///////////////////////////////////////////////////////////////////////////////
 void drawPanelDataScreen(int startIndex)
 {

@@ -78,18 +78,23 @@ void panel_data_average()
     float Isc_avg = 0;
     float Irradiance_avg = 0;
     float Temperature_avg = 0;
+
     for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next)
     {
         Isc_avg += ptr->panel->Isc;
         Irradiance_avg += ptr->panel->Irradiance;
         Temperature_avg += ptr->panel->Temperature;
     }
+
+    // Average over 6 panels
     Isc_avg /= 6.0F;
     Irradiance_avg /= 6.0F;
     Temperature_avg /= 6.0F;
     panel_avg.Isc = Isc_avg;
     panel_avg.Irradiance = Irradiance_avg;
     panel_avg.Temperature = Temperature_avg;
+
+    // Get current time stamp
     time_t now = time(nullptr);
     struct tm *t = localtime(&now);
     char time_stamp[20];
@@ -107,8 +112,8 @@ void transmission_buffer()
     static uint8_t avg_count = 0;
     static char last_time_stamp[20] = {0};
     avg_count++;
-    Serial.println("Average count for LoRa: " + String(avg_count));
 
+    // Reset averaging if buffer is ready or max count reached
     if ((!buffer_ready && avg_count > AVG_COUNT_THRESHOLD) || (buffer_ready && avg_count > NO_REQUEST_THRESHOLD))
     {
         avg_Irradiance = 0.0F;
@@ -120,10 +125,12 @@ void transmission_buffer()
 
     if (!buffer_ready)
     {
-        avg_Irradiance += (panel_avg.Irradiance - avg_Irradiance) / avg_count; // Cumulative average
+        // Cumulative average calculation
+        avg_Irradiance += (panel_avg.Irradiance - avg_Irradiance) / avg_count;
         strncpy(last_time_stamp, panel_avg.time_stamp, sizeof(last_time_stamp) - 1);
         last_time_stamp[sizeof(last_time_stamp) - 1] = '\0';
 
+        // Prepare buffer when enough samples are averaged
         if (avg_count >= AVG_COUNT_THRESHOLD)
         {
             snprintf(tx_buffer, BUFFER_SIZE, "%s|%s|%.2f", "NODE1", last_time_stamp, avg_Irradiance);
@@ -143,6 +150,7 @@ void thinkspeak_url_5min_cal()
     static int Threshold;
     average_count++;
 
+    // Reset averaging if max count exceeded
     Threshold = calibration_mode ? AVG_COUNT_THINKSPEAK_THRESHOLD_CALIBRATION : AVG_COUNT_THRESHOLD;
     if (average_count > Threshold)
     {
@@ -151,15 +159,18 @@ void thinkspeak_url_5min_cal()
         average_count = 1;
     }
 
-    Serial.println("Average count for Thinkspeak: " + String(average_count));
+    // Cumulative average for each panel
     int i = 0;
     for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next, i++)
     {
-        panels_avg_irr[i] += (ptr->panel->Irradiance - panels_avg_irr[i]) / average_count; // Cumulative average for each panel
+        panels_avg_irr[i] += (ptr->panel->Irradiance - panels_avg_irr[i]) / average_count;
     }
-    panel_avg_irr += (panel_avg.Irradiance - panel_avg_irr) / average_count; // Cumulative average for all panels
-    Serial.printf("Average irradiance of all panels for Thinkspeak: %.2f W/m²\n", panel_avg_irr);
 
+    // Cumulative average for all panels jointly
+    panel_avg_irr += (panel_avg.Irradiance - panel_avg_irr) / average_count;
+    Serial.printf("Average irradiance of all panels: %.2f W/m²\n", panel_avg_irr);
+
+    // Prepare URL when enough samples are averaged
     if (average_count >= Threshold)
     {
         if (calibration_mode)
@@ -181,6 +192,8 @@ void thinkspeak_url_5min_cal()
 
         Serial.println("Sending data to ThingSpeak:");
         Serial.println(url);
+
+        // Send data to ThingSpeak
         upload_to_thinkspeak();
     }
 }
@@ -190,6 +203,7 @@ void thinkspeak_url_5min_cal()
 ///////////////////////////////////////////////////////////////////////////////
 void thinkspeak_url_15sec()
 {
+    // Prepare URL for 15-second ThingSpeak upload
     int i = 0;
     url = String(thingspeakServer) + "?api_key=" + String(writeAPIKey_15sec);
 
@@ -202,6 +216,7 @@ void thinkspeak_url_15sec()
     Serial.println("Sending data to 15 sec ThingSpeak:");
     Serial.println(url);
 
+    // Send data to ThingSpeak
     upload_to_thinkspeak();
 }
 
@@ -212,19 +227,21 @@ void calibration_average()
 {
     average_cal_count++;
 
+    // Reset calibration averaging if used
     if (cal_buffer_used)
     {
         spektron_avg_irr = 0.0F;
         average_cal_count = 1;
         cal_buffer_used = false;
     }
-    Serial.println("Average count for calibration Thinkspeak: " + String(average_cal_count));
+
+    // Measure Spektron irradiance
     ads[0].readADC_SingleEnded(3);
     int16_t Spektron_raw = ads[0].readADC_SingleEnded(3);
     float Spektron_voltage = (float)Spektron_raw * ADS1115_LSB_GAIN_ONE;
     Spektron_reading = Spektron_voltage * (Spektron_irradiance_reference / Spektron_voltage_reference);
-    Serial.printf("Spektron Irradiance: %.2f W/m^2\n", Spektron_reading);
 
-    spektron_avg_irr += (Spektron_reading - spektron_avg_irr) / average_cal_count; // Cumulative average for Spektron
-    Serial.printf("Average Spektron irradiance for Thinkspeak: %.2f W/m²\n", spektron_avg_irr);
+    // Cumulative average calculation
+    spektron_avg_irr += (Spektron_reading - spektron_avg_irr) / average_cal_count;
+    Serial.printf("Average Spektron irradiance: %.2f W/m²\n", spektron_avg_irr);
 }

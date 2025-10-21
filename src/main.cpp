@@ -26,10 +26,10 @@ void setup()
 ///////////////////////////////////////////////////////////////////////////////
 void loop()
 {
-
     update_display();
     handle_lora_requests();
 
+    // Calibration mode handling
     unsigned long cal_currentMillis = millis();
     if (calibration_mode && (cal_currentMillis - lastCalRead >= 2000))
     {
@@ -37,6 +37,7 @@ void loop()
         calibration_average();
     }
 
+    // Sensor reading and data processing every 15 seconds
     unsigned long currentMillis = millis();
     if (currentMillis - lastSensorRead >= 15000)
     {

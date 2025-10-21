@@ -38,6 +38,7 @@ int getWeekNumber(struct tm *timeinfo)
 ///////////////////////////////////////////////////////////////////////////////
 void save_data_to_csv()
 {
+    // Get current time for filename
     time_t now = time(nullptr);
     struct tm *timeinfo = localtime(&now);
     int weekNumber = getWeekNumber(timeinfo);
@@ -47,9 +48,12 @@ void save_data_to_csv()
         Serial.println("Error: Invalid time, be aware of NTP configuration and possible invalid timestamp.");
         configTime(-6 * 3600, 0, "pool.ntp.org", "time.nist.gov"); // Configure NTP; -6 for CST (Costa Rica)
     }
+
+    // Create filename based on week number, year, and calibration mode
     char filename[32];
     if (calibration_mode)
     {
+        // Create file if it doesn't exist and write header
         snprintf(filename, sizeof(filename), "/W%02d_%d_calibration.csv", weekNumber, year);
         if (!SD.exists(filename))
         {
@@ -63,6 +67,8 @@ void save_data_to_csv()
                          "P1 [W/m^2],P2 [W/m^2],P3 [W/m^2],P4_ [W/m^2],P5 [W/m^2],P6 [W/m^2],Pavg [W/m^2],Spektron [W/m^2]");
             file.close();
         }
+
+        // Append data to calibration file
         File file = SD.open(filename, FILE_APPEND);
         if (!file)
         {
@@ -81,6 +87,7 @@ void save_data_to_csv()
     }
     else
     {
+        // Create file if it doesn't exist and write header
         snprintf(filename, sizeof(filename), "/W%02d_%d_irradiance.csv", weekNumber, year);
         if (!SD.exists(filename))
         {
@@ -100,6 +107,8 @@ void save_data_to_csv()
                          "Pavg_Isc,Pavg_Irr,Pavg_T");
             file.close();
         }
+
+        // Append data to regular file
         File file = SD.open(filename, FILE_APPEND);
         if (!file)
         {

@@ -63,7 +63,7 @@ void calibrate_ina226_sensors()
         // Set number of averages (1024 = maximum precision)
         ina226[i].setAverage(INA226_1024_SAMPLES);
 
-        // Set conversion time to minimun on bus (not used) and maximun on shunt (maximum precision)(use for current measurement)
+        // Set conversion time to minimun on bus (not used) and maximun on shunt (maximum precision)(used for current measurement)
         ina226[i].setBusVoltageConversionTime(INA226_140_us);
         ina226[i].setShuntVoltageConversionTime(INA226_8300_us);
 
@@ -73,14 +73,15 @@ void calibrate_ina226_sensors()
         // Configure calibration based on shunt and expected current
         ina226[i].setMaxCurrentShunt(max_expected_current, shunt_resistance);
 
-        delay(1); // Avoid I2C congestion
+        // Wait to avoid I2C congestion
+        delay(1);
 
         Serial.print("INA226 P");
         Serial.print(i + 1);
         Serial.println(" calibrated successfully.");
     }
 
-    Serial.print("All INA226 sensors calibrated, sample time for each: 8.445056 s.");
+    Serial.print("All INA226 sensors calibrated, sample time for each: 8.6 s.");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -91,24 +92,24 @@ void calibrate_ads1115_sensors()
 
     for (int i = 0; i < 2; i++)
     {
-        // Check and correct the data rate if necessary
+        // Check and correct the data rate if necessary to 128 SPS
         int data_rate = ads[i].getDataRate();
         if (data_rate != 128)
         {
-            ads[i].setDataRate(128); // Set to 128 SPS for ADS1115
+            ads[i].setDataRate(128);
             data_rate = 128;
         }
         Serial.printf("ADC %d data rate set to %d SPS.\n", i + 1, data_rate);
 
-        // Check and correct the gain if necessary
+        // Check and correct the gain if necessary to GAIN_ONE (+- 4.096V)
         adsGain_t ads_gain = ads[i].getGain();
         if (ads_gain != GAIN_ONE)
         {
-            ads[i].setGain(GAIN_ONE); // Set to 1x gain for ADS1115
+            ads[i].setGain(GAIN_ONE);
             ads_gain = GAIN_ONE;
         }
 
-        delay(1); // Avoid I2C congestion
+        delay(1);
         Serial.print("ADC ");
         Serial.print(i + 1);
         Serial.println(" calibrated successfully.");
@@ -127,19 +128,29 @@ void read_ina226_sensors()
     for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next)
     {
         unsigned long start_time = millis();
+
+        // Wait until conversion is ready
         while (!ptr->panel->ina226_sensor->isConversionReady())
-        { // Wait until conversion is ready
+        { 
             delay(10);
         }
+
+        // Read current in mA
         float current_mA = ptr->panel->ina226_sensor->getCurrent_mA();
         delay(1);
+
+        // Apply temperature compensation and calibration to get irradiance
         float irradiance = Isc_to_irradiance(current_mA, ptr->panel->Temperature);
         float irradiancia_cal = calib_a[panel_index] * irradiance + calib_b[panel_index];
+
+        // Store readings
         ptr->panel->Irradiance = irradiancia_cal;
         ptr->panel->Isc = current_mA;
         Serial.printf("Panel %d -> Isc: %.3f mA, Irradiance: %.2f W/m²\n", panel_index + 1, current_mA, irradiancia_cal);
         panel_index++;
     }
+
+    // Average data after reading all panels
     panel_data_average();
 }
 
@@ -148,17 +159,18 @@ void read_ina226_sensors()
 ///////////////////////////////////////////////////////////////////////////////
 void read_ads1115_sensors()
 {
+    // Update VCC measurement
     ads[1].readADC_SingleEnded(3);
     int16_t vin_c = ads[1].readADC_SingleEnded(3);
     delay(1);
     float vin = (float)vin_c * ADS1115_LSB_GAIN_ONE;
-    Serial.printf("Vin test: %.4f V\n", vin);
     if ((abs(VCC - vin)) > 0.2)
         VCC = vin;
 
     int panel_index = 0;
     for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next)
     {
+        // Read temperature based on panel index
         if (panel_index < 3)
         {
             ptr->panel->ads_sensor->readADC_SingleEnded(panel_index); // discard first sample for settling

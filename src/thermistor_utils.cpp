@@ -15,6 +15,8 @@ float voltage_to_resistance(float vout)
         return 1e9f; // essentially infinite (open)
     if (vout >= VCC)
         return 1e-3f; // near zero (short)
+
+    // Voltage divider formula: R_therm = R_pullup * (V_out / (V_in - V_out))
     return R_PULLUP * (vout / (VCC - vout));
 }
 
@@ -23,11 +25,16 @@ float voltage_to_resistance(float vout)
 ///////////////////////////////////////////////////////////////////////////////
 float resistance_to_celsius(float rtherm)
 {
+    // Check for invalid resistance
     if (rtherm <= 0.0f)
-        return -273.15f;                                           // invalid
-    float invT = (1.0f / T0_K) + (1.0f / BETA) * log(rtherm / R0); // Beta formula: 1/T = 1/T0 + (1/B) * ln(R/R0)
-    float T = 1.0f / invT;                                         // Kelvin
-    return T - 273.15f;                                            // Celsius
+        return -273.15f; // Absolute zero in Celsius
+    
+    // Beta parameter equation: 1/T = 1/T0 + (1/B) * ln(R/R0)
+    float invT = (1.0f / T0_K) + (1.0f / BETA) * log(rtherm / R0);
+    float T = 1.0f / invT;
+
+    // Convert to Celsius
+    return T - 273.15f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

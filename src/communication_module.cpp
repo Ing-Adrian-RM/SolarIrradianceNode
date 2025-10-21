@@ -11,6 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 void initialize_communication()
 {
+    // Connect to WiFi
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED)
     {
@@ -20,6 +21,7 @@ void initialize_communication()
     Serial.println("WiFi conectado!");
     configTime(-6 * 3600, 0, "pool.ntp.org", "time.nist.gov"); // Configure NTP; -6 for CST (Costa Rica)
 
+    // Initialize LoRa module
     SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
     LoRa.setPins(LORA_CS, LORA_RST, LORA_DIO0);
     if (!LoRa.begin(LORA_FREQ_HZ))
@@ -61,6 +63,8 @@ void handle_lora_requests()
         Serial.println("Received packet with RSSI: " + String(rssi) + " dBm, SNR: " + String(snr) + " dB");
         String request = "";
         int byteIndex = 0;
+
+        // Read incoming LoRa packet omitting first 4 bytes (header) for library compatibility
         while (LoRa.available())
         {
             char c = (char)LoRa.read();
