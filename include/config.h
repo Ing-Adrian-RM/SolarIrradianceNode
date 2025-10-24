@@ -14,10 +14,12 @@
 #define LORA_CS    18
 #define LORA_RST   23
 #define LORA_DIO0  26
-#define LORA_FREQ_HZ  915E6
-#define LORA_BW_HZ    125E3
-#define LORA_SF       7
-#define LORA_CR_DEN   5
+#define LORA_FREQ      900E6
+#define LORA_BW        500E3
+#define LORA_SF        10
+#define LORA_CR        5      // coding rate 4/5
+#define LORA_SYNC_WORD 0x12   // 12 by default
+#define TX_POWER_DBM   20
 
 #define BUFFER_SIZE 128
 #define AVG_COUNT_THRESHOLD 20
@@ -156,6 +158,10 @@ extern volatile bool buffer_ready;
 extern int rssi;
 extern float snr;
 extern String url;
+extern const uint8_t NODE_ADDR;
+extern const uint8_t GATEWAY_ADDR;
+extern uint8_t g_msg_id;
+extern uint32_t timeout_ms;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Module Includes

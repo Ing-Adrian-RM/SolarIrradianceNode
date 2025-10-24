@@ -94,3 +94,7 @@ volatile bool buffer_ready = false; // Flag to indicate buffer is ready for tran
 int rssi = 0; // Received Signal Strength Indicator
 float snr = 0.0f; // Signal-to-Noise Ratio
 String url = ""; // URL for HTTP requests
+const uint8_t NODE_ADDR    = 22; // TTGO
+const uint8_t GATEWAY_ADDR = 30; // Gateway
+uint8_t g_msg_id = 0; // Package ID
+uint32_t timeout_ms = 50; // Transmission time_out in ms

@@ -24,7 +24,7 @@ void initialize_communication()
     // Initialize LoRa module
     SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
     LoRa.setPins(LORA_CS, LORA_RST, LORA_DIO0);
-    if (!LoRa.begin(LORA_FREQ_HZ))
+    if (!LoRa.begin(LORA_FREQ))
     {
         Serial.println("Error: Failed to initialize LoRa");
         while (1)
@@ -32,10 +32,13 @@ void initialize_communication()
     }
     else
     {
-        LoRa.setSignalBandwidth(LORA_BW_HZ);
-        LoRa.setSpreadingFactor(LORA_SF);
-        LoRa.setCodingRate4(LORA_CR_DEN);
-        LoRa.enableCrc();
+        LoRa.setSignalBandwidth(LORA_BW);     // 500 kHz
+        LoRa.setSpreadingFactor(LORA_SF);     // SF10
+        LoRa.setCodingRate4(LORA_CR);         // 4/5
+        LoRa.enableCrc();                     // CRC ON   
+        LoRa.setSyncWord(LORA_SYNC_WORD);     // 0x12
+        LoRa.setPreambleLength(8);            // igual a RH por defecto
+        LoRa.setTxPower(TX_POWER_DBM, PA_OUTPUT_PA_BOOST_PIN); // PA_BOOST
         Serial.println("LoRa initialized successfully");
     }
 }
@@ -51,63 +54,109 @@ String getWiFiStatus()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// send_lora: Create the package header (4 bytes) + payload
+// Inputs: to -> Rx LoRa address
+//         payload -> Buffer to send
+///////////////////////////////////////////////////////////////////////////////
+void send_lora(uint8_t to, const String &payload)
+{
+    LoRa.beginPacket();
+    LoRa.write(to);            // TO
+    LoRa.write(NODE_ADDR);     // FROM
+    LoRa.write(g_msg_id++);    // ID
+    LoRa.write((uint8_t)0x00); // FLAGS
+    LoRa.print(payload);       // PAYLOAD ASCII
+    LoRa.endPacket();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// recv_lora: Receive the package and split the header's elements and payload
+// Inputs: to -> Rx LoRa address
+//         from -> Tx LoRa address
+//         id -> Package ID
+//         payload -> Buffer to receive
+//         timeout_ms -> Wait time 
+///////////////////////////////////////////////////////////////////////////////
+bool recv_lora(uint8_t &to, uint8_t &from, uint8_t &id, uint8_t &flags, String &payload)
+{
+    uint32_t t0 = millis();
+    while (millis() - t0 < timeout_ms)
+    {
+        int pktLen = LoRa.parsePacket();
+        if (pktLen >= 5)
+        {
+            to = (uint8_t)LoRa.read();
+            from = (uint8_t)LoRa.read();
+            id = (uint8_t)LoRa.read();
+            flags = (uint8_t)LoRa.read();
+
+            payload.reserve(pktLen - 4);
+            payload = "";
+            while (LoRa.available())
+            {
+                payload += (char)LoRa.read();
+            }
+
+            // Debug RX
+            Serial.printf("RX  TO:%u FROM:%u ID:%u FL:%u | RSSI:%d SNR:%.2f | '%s'\n",
+                          to, from, id, flags, LoRa.packetRssi(), LoRa.packetSnr(), payload.c_str());
+            return true;
+        }
+        delay(1);
+    }
+    return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // handle_lora_requests: Listen for gateway requests and send data
 ///////////////////////////////////////////////////////////////////////////////
 void handle_lora_requests()
 {
-    int packetSize = LoRa.parsePacket();
-    if (packetSize)
+    uint8_t to, from, id, flags;
+    String payload;
+
+    // Wait data request from Gateway
+    if (recv_lora(to, from, id, flags, payload))
     {
         rssi = LoRa.packetRssi();
         snr = LoRa.packetSnr();
-        Serial.println("Received packet with RSSI: " + String(rssi) + " dBm, SNR: " + String(snr) + " dB");
-        String request = "";
-        int byteIndex = 0;
-
-        // Read incoming LoRa packet omitting first 4 bytes (header) for library compatibility
-        while (LoRa.available())
+        if (to == NODE_ADDR)
         {
-            char c = (char)LoRa.read();
-            if (byteIndex >= 4)
+            String expected = "Data!" + String(NODE_ADDR);
+            if (payload == expected)
             {
-                request += c;
-            }
-            byteIndex++;
-        }
 
-        Serial.println("Received via LoRa: " + request);
-        if (request == "NODE1")
-        {
-            char buffer[BUFFER_SIZE];
-            if (buffer_ready)
-            {
-                snprintf(buffer, BUFFER_SIZE, "%s", tx_buffer);
-            }
-            else
-            {
-                snprintf(buffer, BUFFER_SIZE, "%s", "NO_DATA");
-            }
-            LoRa.beginPacket();
-            LoRa.write((const uint8_t *)buffer, strlen(buffer));
-            LoRa.endPacket();
-            Serial.println("Sent via LoRa: " + String(buffer));
-            buffer_ready = false;
+                // ACK to check command received on TTGO
+                send_lora(from, "ok");
+                Serial.println("TX: ACK send");
+                delay(120);
 
-            // Wait 1 sec for ACK response
-            unsigned long startWait = millis();
-            while (packetSize == 0 && (millis() - startWait < 1000))
-            {
-                packetSize = LoRa.parsePacket();
-                delay(10);
-                yield();
-            }
-            if (packetSize == 0)
-            {
-                Serial.println("No ACK response received in 1s, resending package.");
-                LoRa.beginPacket();
-                LoRa.write((const uint8_t *)buffer, strlen(buffer));
-                LoRa.endPacket();
-                Serial.println("Resending via LoRa: " + String(buffer));
+                // Send payload
+                char buffer[BUFFER_SIZE];
+                if (buffer_ready)
+                {
+                    snprintf(buffer, BUFFER_SIZE, "%s", tx_buffer);
+                    buffer_ready = false;
+                }
+                else
+                {
+                    snprintf(buffer, BUFFER_SIZE, "%s", "NO_DATA");
+                }
+                send_lora(from, String(buffer));
+                Serial.printf("TX: data '%s'\n", buffer);
+
+                // ACK to check data was received on Gateway
+                uint32_t t0 = millis();
+                while (millis() - t0 < timeout_ms)
+                {
+                    uint8_t t2, f2, i2, fl2;
+                    String p2;
+                    if (recv_lora(t2, f2, i2, fl2, p2) && t2 == NODE_ADDR && p2 == "ok")
+                    {
+                        Serial.println("RX: ACK received.");
+                        break;
+                    }
+                }
             }
         }
     }
