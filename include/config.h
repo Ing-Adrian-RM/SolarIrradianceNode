@@ -14,7 +14,7 @@
 #define LORA_CS    18
 #define LORA_RST   23
 #define LORA_DIO0  26
-#define LORA_FREQ      900E6
+#define LORA_FREQ      915E6
 #define LORA_BW        500E3
 #define LORA_SF        10
 #define LORA_CR        5      // coding rate 4/5
