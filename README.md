@@ -5,7 +5,7 @@ IoT node built around the ESP32-based TTGO LoRa32 V2.1 board to capture solar ir
 ## 📡 System overview
 - **Acquisition**: Six INA226 current sensors capture short-circuit current (Isc) for each panel IXOLAR KXOB25-14X1F-TR, while six Littelfuse USP10982 thermistors are digitized through two ADS1115 converters to obtain panel temperatures.
 - **Processing**: Isc readings are temperature-compensated, converted into irradiance, aggregated per panel, and combined into global averages for local display, storage, and radio transmission.
-- **Communication**: The node replies to LoRa gateway requests (`NODE1`) with the latest averaged packet and periodically pushes 15 s and 5 min summaries to ThingSpeak (normal or calibration mode).
+- **Communication**: The node replies to LoRa gateway requests (`Data!22`) -22 is the LoRa ID identifier for this node- with the latest averaged packet and periodically pushes 15 s and 5 min summaries to ThingSpeak (normal or calibration mode).
 - **Local interface**: The onboard OLED cycles through system status, per-panel metrics, global averages, and transmission state screens.
 - **Storage**: Every 15 seconds, a new row is appended to a weekly CSV file stored on the SD card, with timestamps, Isc, irradiance, temperature, and Spektron reference (when available).
 
@@ -62,7 +62,7 @@ This command fetches dependencies and compiles the firmware for `ttgo-lora32-v21
 ## 🔄 Execution flow
 1. `setup()` initializes the SD card, sensors, display, communication stack, and data structures, followed by INA226/ADS1115 calibration routines.
 2. `loop()` rotates OLED screens, handles LoRa packets, performs 15 s acquisition cycles, processes irradiance metrics, appends CSV rows, and updates ThingSpeak buffers.
-3. Upon receiving the `NODE1` request, the node returns `NODE1|timestamp|avg_irradiance`; otherwise it replies `NO_DATA` when buffers are empty.
+3. Upon receiving the `Data!22` request, the node returns `avg_irradiance` value in [W/m^2]; otherwise it replies `NO_DATA` when buffers are empty.
 4. `thinkspeak_url_15sec()` and `thinkspeak_url_5min_cal()` prepare REST payloads and trigger `upload_to_thinkspeak()` to publish accumulated averages.
 
 ## 🗃️ SD card CSV layout
