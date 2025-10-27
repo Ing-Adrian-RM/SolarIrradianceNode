@@ -133,7 +133,7 @@ void transmission_buffer()
         // Prepare buffer when enough samples are averaged
         if (avg_count >= AVG_COUNT_THRESHOLD)
         {
-            snprintf(tx_buffer, BUFFER_SIZE, "%s|%s|%.2f", "NODE1", last_time_stamp, avg_Irradiance);
+            snprintf(tx_buffer, BUFFER_SIZE, "%.2f", avg_Irradiance);
             buffer_ready = true;
         }
     }
