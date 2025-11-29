@@ -108,7 +108,7 @@ void panel_data_average()
 ///////////////////////////////////////////////////////////////////////////////
 void transmission_buffer()
 {
-    static float avg_Irradiance = 0.0F;
+    static float panels_avg_irradiance[6] = {0};
     static uint8_t avg_count = 0;
     static char last_time_stamp[20] = {0};
     avg_count++;
@@ -116,7 +116,7 @@ void transmission_buffer()
     // Reset averaging if buffer is ready or max count reached
     if ((!buffer_ready && avg_count > AVG_COUNT_THRESHOLD) || (buffer_ready && avg_count > NO_REQUEST_THRESHOLD))
     {
-        avg_Irradiance = 0.0F;
+        memset(panels_avg_irradiance, 0, sizeof(panels_avg_irradiance));
         avg_count = 1;
         memset(last_time_stamp, 0, sizeof(last_time_stamp));
         memset(tx_buffer, 0, sizeof(tx_buffer));
@@ -125,15 +125,20 @@ void transmission_buffer()
 
     if (!buffer_ready)
     {
-        // Cumulative average calculation
-        avg_Irradiance += (panel_avg.Irradiance - avg_Irradiance) / avg_count;
-        strncpy(last_time_stamp, panel_avg.time_stamp, sizeof(last_time_stamp) - 1);
-        last_time_stamp[sizeof(last_time_stamp) - 1] = '\0';
+        // Cumulative average for each panel
+        int i = 0;
+        for (SOLAR_CELL_LIST_PTR ptr = panel_list; ptr != NULL; ptr = ptr->next, i++)
+        {
+            panels_avg_irradiance[i] += (ptr->panel->Irradiance - panels_avg_irradiance[i]) / avg_count;
+        }
 
         // Prepare buffer when enough samples are averaged
         if (avg_count >= AVG_COUNT_THRESHOLD)
         {
-            snprintf(tx_buffer, BUFFER_SIZE, "%.2f", avg_Irradiance);
+            snprintf(tx_buffer, BUFFER_SIZE, "%.2f/%.2f/%.2f/%.2f/%.2f/%.2f",
+                     panels_avg_irradiance[0], panels_avg_irradiance[1],
+                     panels_avg_irradiance[2], panels_avg_irradiance[3],
+                     panels_avg_irradiance[4], panels_avg_irradiance[5]);
             buffer_ready = true;
         }
     }
@@ -142,7 +147,7 @@ void transmission_buffer()
 ///////////////////////////////////////////////////////////////////////////////
 // thinkspeak_url_5min_calibration: Prepare URL for ThingSpeak upload every 5 minutes or in calibration mode
 ///////////////////////////////////////////////////////////////////////////////
-void thinkspeak_url_5min_cal()
+void thingspeak_url_5min_cal()
 {
     static float panels_avg_irr[6] = {0};
     static float panel_avg_irr = 0.0F;
@@ -151,7 +156,7 @@ void thinkspeak_url_5min_cal()
     average_count++;
 
     // Reset averaging if max count exceeded
-    Threshold = calibration_mode ? AVG_COUNT_THINKSPEAK_THRESHOLD_CALIBRATION : AVG_COUNT_THRESHOLD;
+    Threshold = calibration_mode ? AVG_COUNT_THINGSPEAK_THRESHOLD_CALIBRATION : AVG_COUNT_THRESHOLD;
     if (average_count > Threshold)
     {
         memset(panels_avg_irr, 0, sizeof(panels_avg_irr));
@@ -194,14 +199,14 @@ void thinkspeak_url_5min_cal()
         Serial.println(url);
 
         // Send data to ThingSpeak
-        upload_to_thinkspeak();
+        upload_to_thingspeak();
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // thinkspeak_url_15_sec: Prepare URL for ThingSpeak upload every 15 seconds
 ///////////////////////////////////////////////////////////////////////////////
-void thinkspeak_url_15sec()
+void thingspeak_url_15sec()
 {
     // Prepare URL for 15-second ThingSpeak upload
     int i = 0;
@@ -212,12 +217,12 @@ void thinkspeak_url_15sec()
         url += "&field" + String(i + 1) + "=" + String(ptr->panel->Irradiance, 2);
     }
     url += "&field7=" + String(panel_avg.Irradiance, 2);
-    
+
     Serial.println("Sending data to 15 sec ThingSpeak:");
     Serial.println(url);
 
     // Send data to ThingSpeak
-    upload_to_thinkspeak();
+    upload_to_thingspeak();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

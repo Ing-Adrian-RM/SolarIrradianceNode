@@ -8,33 +8,33 @@
 
 #define TOUCH_CS -1
 
-#define LORA_SCK   5
-#define LORA_MISO  19
-#define LORA_MOSI  27
-#define LORA_CS    18
-#define LORA_RST   23
-#define LORA_DIO0  26
-#define LORA_FREQ      915E6
-#define LORA_BW        500E3
-#define LORA_SF        10
-#define LORA_CR        5      // coding rate 4/5
-#define LORA_SYNC_WORD 0x12   // 12 by default
-#define TX_POWER_DBM   20
+#define LORA_SCK 5
+#define LORA_MISO 19
+#define LORA_MOSI 27
+#define LORA_CS 18
+#define LORA_RST 23
+#define LORA_DIO0 26
+#define LORA_FREQ 915E6
+#define LORA_BW 500E3
+#define LORA_SF 10
+#define LORA_CR 5           // coding rate 4/5
+#define LORA_SYNC_WORD 0x12 // 12 by default
+#define TX_POWER_DBM 20
 
 #define BUFFER_SIZE 128
 #define AVG_COUNT_THRESHOLD 20
 #define NO_REQUEST_THRESHOLD 40
-#define AVG_COUNT_THINKSPEAK_THRESHOLD_CALIBRATION 4
+#define AVG_COUNT_THINGSPEAK_THRESHOLD_CALIBRATION 4
 
-#define HSPI_MISO   02
-#define HSPI_MOSI   15
-#define HSPI_SCLK   14
-#define HSPI_SS     13
+#define HSPI_MISO 02
+#define HSPI_MOSI 15
+#define HSPI_SCLK 14
+#define HSPI_SS 13
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define SCREEN_ADDRESS 0x3D
-#define OLED_RESET     -1
+#define OLED_RESET -1
 ///////////////////////////////////////////////////////////////////////////////
 // Include necessary libraries and define global constants
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,7 +44,7 @@
 #include <SPI.h>
 // ------------------------ Sensors ------------------------
 #include <INA226.h>
-#include <Adafruit_ADS1X15.h> 
+#include <Adafruit_ADS1X15.h>
 // ------------------------ Display ------------------------
 #include <U8x8lib.h>
 #include <U8g2lib.h>
@@ -63,32 +63,34 @@
 #include <math.h>
 #include <iostream>
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Global Objects
 ///////////////////////////////////////////////////////////////////////////////
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C display;
 extern INA226 ina226[6];
 extern Adafruit_ADS1115 ads[2];
-extern SPIClass * hspi; // HSPI instance for SD.
+extern SPIClass *hspi; // HSPI instance for SD.
 
-typedef struct solar_cell{
+typedef struct solar_cell
+{
     INA226 *ina226_sensor;
     Adafruit_ADS1115 *ads_sensor;
-    float Isc,Irradiance,Temperature = 0.0F;
-}SOLAR_CELL, *SOLAR_CELL_PTR;
+    float Isc, Irradiance, Temperature = 0.0F;
+} SOLAR_CELL, *SOLAR_CELL_PTR;
 
-typedef struct solar_avg{
+typedef struct solar_avg
+{
     char time_stamp[20];
-    float Isc,Irradiance,Temperature = 0.0F;
+    float Isc, Irradiance, Temperature = 0.0F;
 
-}SOLAR_AVG, *SOLAR_AVG_PTR;
+} SOLAR_AVG, *SOLAR_AVG_PTR;
 
-typedef struct solar_cell_list{
+typedef struct solar_cell_list
+{
     solar_cell *panel;
     struct solar_cell_list *next;
 
-}SOLAR_CELL_LIST, *SOLAR_CELL_LIST_PTR;
+} SOLAR_CELL_LIST, *SOLAR_CELL_LIST_PTR;
 
 extern SOLAR_CELL_LIST_PTR panel_list;
 extern SOLAR_CELL panel_1;
@@ -106,15 +108,15 @@ extern volatile bool buffer_ready;
 // Global Variables and Constants
 ///////////////////////////////////////////////////////////////////////////////
 // ------------------------ WiFi Credentials ------------------------
-extern const char* ssid;
-extern const char* password;
-extern const char* ssid_P;
-extern const char* password_P;
+extern const char *ssid;
+extern const char *password;
+extern const char *ssid_P;
+extern const char *password_P;
 // ------------------------ ThinkSpeak Credentials ------------------------
 extern const char *writeAPIKey_5min;
 extern const char *writeAPIKey_calibration;
 extern const char *writeAPIKey_15sec;
-extern const char* thingspeakServer;
+extern const char *thingspeakServer;
 // ------------------------ Panel data (datasheet) ------------------------
 extern const float Isc_ref_mA;
 extern const float G_ref;
@@ -144,7 +146,7 @@ extern unsigned long lastSensorRead;
 extern unsigned long lastCalRead;
 // ------------------------ Thermistor constants ------------------------
 extern const float R_PULLUP;
-extern const float R0;   
+extern const float R0;
 extern const float BETA;
 extern const float T0_K;
 extern float VCC;

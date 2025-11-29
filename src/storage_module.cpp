@@ -104,7 +104,7 @@ void save_data_to_csv()
                          "P4_Isc [mA],P4_Irr [W/m^2],P4_T [ºC],"
                          "P5_Isc [mA],P5_Irr [W/m^2],P5_T [ºC],"
                          "P6_Isc [mA],P6_Irr [W/m^2],P6_T [ºC],"
-                         "Pavg_Isc,Pavg_Irr,Pavg_T");
+                         "Pavg_Isc [mA],Pavg_Irr [W/m^2],Pavg_T [ºC]");
             file.close();
         }
 

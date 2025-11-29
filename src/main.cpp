@@ -46,7 +46,7 @@ void loop()
         read_ina226_sensors();
         save_data_to_csv();
         transmission_buffer();
-        thinkspeak_url_5min_cal();
-        thinkspeak_url_15sec();
+        thingspeak_url_5min_cal();
+        thingspeak_url_15sec();
     }
 }

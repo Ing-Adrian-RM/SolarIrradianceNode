@@ -131,7 +131,7 @@ void read_ina226_sensors()
 
         // Wait until conversion is ready
         while (!ptr->panel->ina226_sensor->isConversionReady())
-        { 
+        {
             delay(10);
         }
 
@@ -146,7 +146,7 @@ void read_ina226_sensors()
         // Store readings
         ptr->panel->Irradiance = irradiancia_cal;
         ptr->panel->Isc = current_mA;
-        Serial.printf("Panel %d -> Isc: %.3f mA, Irradiance: %.2f W/m²\n", panel_index + 1, current_mA, irradiancia_cal);
+        Serial.printf("Panel %d -> Isc: %.2f mA, Irradiance: %.2f W/m²\n", panel_index + 1, current_mA, irradiancia_cal);
         panel_index++;
     }
 
@@ -159,7 +159,7 @@ void read_ina226_sensors()
 ///////////////////////////////////////////////////////////////////////////////
 void read_ads1115_sensors()
 {
-    // Update VCC measurement
+    // Update VDD measurement
     ads[1].readADC_SingleEnded(3);
     int16_t vin_c = ads[1].readADC_SingleEnded(3);
     delay(1);
